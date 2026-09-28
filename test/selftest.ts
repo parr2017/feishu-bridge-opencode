@@ -8,7 +8,7 @@
  * 为什么不用 vitest/jest：这些模块零依赖、只做纯函数，用 tsc 编译后直接 node 跑最省事，
  * 也避免为了测试再引一整套运行时。
  */
-import { card2, cardResponse, buildResultCard, clip } from '../src/feishu/cards.ts';
+import { card2, cardResponse, buildResultCard, clip, collapse, form, inputField, note, submitBtn } from '../src/feishu/cards.ts';
 import { permViewOf, permSummaryOf, clipText } from '../src/feishu/permView.ts';
 import { formFieldsOf, initialFormValues, missingRequiredKeys, buildFormAnswer } from '../src/feishu/formView.ts';
 import { buildSessionsCard, buildModelsCard, buildAgentsCard, buildInboxCard } from '../src/feishu/listCards.ts';
@@ -102,10 +102,31 @@ section('cards —— 卡片 2.0 构件');
   const c = card2('blue', 'T', [{ tag: 'markdown', content: 'x' }]);
   check('card2 用 schema 2.0', c.schema === '2.0', c.schema);
   check('card2 有 body.elements', Array.isArray((c.body as any)?.elements));
+  check('card2 带 header 模板', (c.header as any)?.template === 'blue', c.header);
   check('cardResponse 包成 {card:{type:raw}}', (cardResponse(c) as any)?.card?.type === 'raw');
   check('否定结论 → red', (buildResultCard('已拒绝', ['x']) as any).header.template === 'red');
   check('肯定结论 → green', (buildResultCard('已批准', ['x']) as any).header.template === 'green');
   check('长文本截断带提示', clip('y'.repeat(3000), 100).includes('截断'));
+
+  // ---- 飞书卡片 2.0 的字段红线 ----
+  // 这几条是「多一个字段整卡被拒」的坑，来自 co-team f3fcd55（真机发卡验收 + 逐字段探针）。
+  // 200621 unknown property / 230099 / 11310 全是整卡被拒，用户侧表现是「什么都没收到」。
+  const panel = collapse('全部目标（8 项）', [{ tag: 'markdown', content: '1. a' }]) as Record<string, any>;
+  check('collapse：顶层不能有 expand', panel.expand === undefined, panel.expand);
+  check('collapse：header 不能有 expand（200621 unknown property）', panel.header?.expand === undefined, panel.header?.expand);
+  check('collapse：header 只允许 title/background_color/vertical_align', JSON.stringify(Object.keys(panel.header).sort()) === JSON.stringify(['background_color', 'title', 'vertical_align']), Object.keys(panel.header));
+  check('collapse：header 不能有 padding', panel.header?.padding === undefined, panel.header?.padding);
+  check('collapse：border 只允许 color/corner_radius', JSON.stringify(Object.keys(panel.border).sort()) === JSON.stringify(['color', 'corner_radius']), Object.keys(panel.border));
+  check('collapse：tag 正确', panel.tag === 'collapsible_panel', panel.tag);
+
+  check('note 是 markdown（2.0 不支持 1.0 note 标签）', note('落款').tag === 'markdown');
+
+  check('inputField：max_length 封顶 1000（11310 整卡被拒）', (inputField('a', 'x', 5000) as any).max_length === 1000);
+
+  const f = form('ib_x', [inputField('answer', '输入…'), submitBtn('发送', 'go')]) as Record<string, any>;
+  const submit = f.elements[f.elements.length - 1] as any;
+  check('form：提交按钮带 form_action_type（否则拿不到 form_value）', submit.form_action_type === 'submit', submit.form_action_type);
+  check('form：提交按钮的 name 是路由令牌', submit.name === 'go', submit.name);
 }
 
 // ---------------------------------------------------------------- 列表卡

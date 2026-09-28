@@ -23,10 +23,23 @@ export function md(content) {
 export function note(content) {
     return md(content);
 }
+/**
+ * 折叠面板（2.0 `collapsible_panel`）：长命令/多资源时收纳，避免主卡被撑爆。
+ *
+ * 实测红线（co-team 用探针逐字段试出来的，踩错整卡被拒 230099/200621）：
+ * - **没有 `expand` 属性**——塞元素顶层或 header 里都报 `unknown property: expand`，
+ *   默认就是折叠态；
+ * - header 只吃 `title` / `background_color` / `vertical_align`，
+ *   塞 `padding` 会报 "invalid panel header padding"；
+ * - border 吃 `color` / `corner_radius`。
+ *
+ * ⚠️ 这几个字段多一个整卡就被飞书拒掉，用户侧表现是「什么都没收到」，
+ * 日志里只有一条 warn。改这段前先看 co-team 的 server/test/feishuCards.test.ts。
+ */
 export function collapse(title, elements) {
     return {
         tag: 'collapsible_panel',
-        header: { title: { tag: 'plain_text', content: title }, background_color: 'grey', expand: true },
+        header: { title: { tag: 'plain_text', content: title }, background_color: 'grey', vertical_align: 'center' },
         border: { color: 'grey', corner_radius: '6px' },
         elements,
     };
