@@ -60,7 +60,7 @@ npm run build && git add -A && git commit
 ## 2. 推到 GitHub
 
 ```bash
-git remote add origin https://github.com/<你的用户名>/feishu-bridge-opencode.git
+git remote add origin https://github.com/parr2017/feishu-bridge-opencode.git
 git branch -M main
 git push -u origin main
 ```
@@ -72,14 +72,14 @@ git push -u origin main
 ### 方式 A：git 直装（推荐，不需要发 npm）
 
 ```bash
-opencode plugin add feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git
+opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git
 ```
 
 或手写配置 `~/.config/opencode/opencode.json`：
 
 ```jsonc
 {
-  "plugins": ["feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git"]
+  "plugins": ["feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git"]
 }
 ```
 
@@ -89,7 +89,7 @@ opencode plugin add feishu-bridge-opencode@git+https://github.com/<你的用户�
 想钉版本就加 `#tag`：
 
 ```jsonc
-{ "plugins": ["feishu-bridge-opencode@git+https://github.com/<你>/feishu-bridge-opencode.git#v0.1.0"] }
+{ "plugins": ["feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git#v0.1.0"] }
 ```
 
 ### 方式 B：发到 npm

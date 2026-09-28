@@ -13,14 +13,14 @@
 **一条命令**（装完重启 opencode 即可）：
 
 ```bash
-opencode plugin add feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git
+opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git
 ```
 
 或者写进 `~/.config/opencode/opencode.json`：
 
 ```jsonc
 {
-  "plugins": ["feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git"]
+  "plugins": ["feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git"]
 }
 ```
 
