@@ -10,28 +10,100 @@
 
 ## 安装
 
-**一条命令**（装完重启 opencode 即可）：
+**先用这个**（一条命令，装完重启 opencode）：
 
 ```bash
 opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git
 ```
 
-或者写进 `~/.config/opencode/opencode.json`：
+### ⚠️ 如果上面这条报错，用手动装
 
-```jsonc
+报错长这样（opencode 自带的安装器在部分环境下会这样）：
+
+```
+NpmInstallFailedError: git dep preparation failed
+```
+
+**方式 B —— 最简单，两句命令**（已验证可用）
+
+```bash
+git clone https://github.com/parr2017/feishu-bridge-opencode.git
+cd feishu-bridge-opencode && npm install && opencode
+```
+
+原理：opencode 启动时**自动发现当前目录下 `.opencode/plugin/` 里的插件**，
+所以只要在这个目录里启动就行。缺点：只在当前目录生效。
+
+**方式 C —— 装成全局，任何目录都能用**
+
+```bash
+git clone https://github.com/parr2017/feishu-bridge-opencode.git
+cd feishu-bridge-opencode && npm install
+
+mkdir -p ~/.config/opencode/plugin
+# 必须是符号链接，不能拷贝——入口文件里有相对导入（../../src/index.ts），
+# 拷贝过去路径就断了
+MSYS=winsymlinks:nativestrict ln -s "$(pwd)/.opencode/plugin/feishu.ts" ~/.config/opencode/plugin/feishu.ts
+
+opencode plugin list        # 应看到一行 local .../plugin/feishu.ts
+```
+
+> Windows 上建符号链接需要「开发者模式」（设置 → 系统 → 开发者选项 → 打开），
+> 或以管理员身份开终端。嫌麻烦就用方式 B。
+
+### 装完之后：填凭据
+
+**不需要跑任何向导。** 启动一次 opencode：
+
+```bash
+opencode
+```
+
+插件发现没配置，会自己把模板写到 `~/.config/opencode/feishu-bridge-opencode.json`，
+并在日志里告诉你路径。打开它填两行，**存盘即生效，不用重启 opencode**：
+
+```json
 {
-  "plugins": ["feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git"]
+  "appId": "cli_xxx",
+  "appSecret": "xxx",
+  "approvers": []
 }
 ```
 
-> ⚠️ 注意是 **`plugins`（复数）**——这是 opencode **V2** 的配置键，V1 才是 `plugin`。
-> 这是实测出来的，写错了条目会被静默忽略。
+- `appId` / `appSecret` —— 到[飞书开放平台](https://open.feishu.cn/app)建一个**企业自建应用**，
+  在「凭证与基础信息」里拿（这是唯一必须手动的部分）。
+- `approvers` —— 能点审批卡/权限卡的 open_id 白名单，**先留空也能用**，
+  之后拿到 open_id 再补。
 
-装完之后**不需要跑任何向导**：启动 opencode，插件发现你没配置会自己把配置模板写到
-`~/.config/opencode/feishu-bridge-opencode.json`，并告诉你去哪填。填好 `appId` / `appSecret`
-**存盘即生效，不用重启 opencode**。
+想确认凭据填对了，在克隆下来的仓库里跑一次自检（不经过 opencode，直接打飞书 API）：
 
-（如果你克隆了仓库想开发，见下面的「开发」一节。）
+```bash
+FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx node scripts/check-feishu.mjs
+```
+
+不想动终端的话，直接在群里 @机器人 发 `/status`，看有没有回话也行。
+
+### 让插件常驻
+
+插件活在 opencode 进程里——**不开 opencode，飞书就找不到机器人**：
+
+```bash
+opencode service restart
+```
+
+### 完整走一遍（非开发者视角）
+
+1. 装好 opencode（你应该已经有了）。
+2. 去飞书开放平台建「企业自建应用」，拿 App ID / App Secret。
+3. 权限里勾 `im:message`、`im:message:send_as_bot`。
+4. 「事件与回调」→ 订阅方式选 **「使用长连接接收事件」**，订阅
+   `im.message.receive_v1`（要按钮回调再加 `card.action.trigger`）。
+5. 把机器人拉进群，或开单聊。
+6. 用上面的方式把插件装上。
+7. 启动 opencode，填配置模板里的 `appId` / `appSecret`。
+8. 群里 @机器人 发 `/status` —— 收到状态卡就成了。
+
+详细配置项见 [.env.example](.env.example)，每一项都能写进配置文件里的同名驼峰字段。
 
 ---
 
