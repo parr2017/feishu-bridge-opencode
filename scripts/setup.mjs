@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * opencode-feishu 引导配置。
+ * opencode-plugin-feishu 引导配置。
  *
  *   npm run setup
  *
@@ -23,7 +23,7 @@ const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN_ENTRY = join(PROJECT_ROOT, '.opencode', 'plugin', 'feishu.ts');
 const OPENCODE_DIR = join(homedir(), '.config', 'opencode');
 const CONFIG_PATH = join(OPENCODE_DIR, 'opencode-feishu.json');
-const PLUGIN_LINK = join(OPENCODE_DIR, 'plugin', 'opencode-feishu.ts');
+const PLUGIN_LINK = join(OPENCODE_DIR, 'plugin', 'opencode-plugin-feishu.ts');
 
 // ---------------------------------------------------------------- 终端
 
@@ -158,7 +158,7 @@ async function sendTestMessage(token, apiBase, chatId) {
 // ---------------------------------------------------------------- 主流程
 
 say('');
-say(C.bold('  opencode-feishu 引导配置'));
+say(C.bold('  opencode-plugin-feishu 引导配置'));
 say(C.dim('  ─────────────────────────────────────────────'));
 say('');
 say('  这一步会：');

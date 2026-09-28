@@ -1,5 +1,5 @@
 {
-  "name": "opencode-feishu",
+  "name": "opencode-plugin-feishu",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,7 +20,7 @@
     "typescript": "^5.7.0"
   },
   "bin": {
-    "opencode-feishu": "./scripts/setup.mjs"
+    "opencode-plugin-feishu": "./scripts/setup.mjs"
   },
   "files": [
     "index.js",

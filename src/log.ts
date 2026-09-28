@@ -19,7 +19,7 @@ export function configureLog(level: LogLevel, filePath?: string): void {
 function emit(level: LogLevel, msg: string, extra?: unknown): void {
   if (ORDER[level] < threshold) return;
   const tail = extra === undefined ? '' : ` ${safe(extra)}`;
-  const line = `${new Date().toISOString()} [opencode-feishu] ${level.toUpperCase()} ${msg}${tail}`;
+  const line = `${new Date().toISOString()} [opencode-plugin-feishu] ${level.toUpperCase()} ${msg}${tail}`;
   process.stderr.write(`${line}\n`);
   if (file) {
     try {

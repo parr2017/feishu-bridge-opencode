@@ -13,7 +13,7 @@
  */
 import { startPlugin } from "./plugin.js";
 export default {
-    id: 'opencode-feishu',
+    id: 'opencode-plugin-feishu',
     async setup(ctx) {
         await startPlugin(ctx);
     },
