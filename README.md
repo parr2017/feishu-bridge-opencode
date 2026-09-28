@@ -8,106 +8,10 @@
 
 ---
 
-## 安装
-
-**先用这个**（一条命令，装完重启 opencode）：
-
-```bash
-opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git
-```
-
-### ⚠️ 如果上面这条报错，用手动装
-
-报错长这样（opencode 自带的安装器在部分环境下会这样）：
-
-```
-NpmInstallFailedError: git dep preparation failed
-```
-
-**方式 B —— 最简单，两句命令**（已验证可用）
-
-```bash
-git clone https://github.com/parr2017/feishu-bridge-opencode.git
-cd feishu-bridge-opencode && npm install && opencode
-```
-
-原理：opencode 启动时**自动发现当前目录下 `.opencode/plugin/` 里的插件**，
-所以只要在这个目录里启动就行。缺点：只在当前目录生效。
-
-**方式 C —— 装成全局，任何目录都能用**
-
-```bash
-git clone https://github.com/parr2017/feishu-bridge-opencode.git
-cd feishu-bridge-opencode && npm install
-
-mkdir -p ~/.config/opencode/plugin
-# 必须是符号链接，不能拷贝——入口文件里有相对导入（../../src/index.ts），
-# 拷贝过去路径就断了
-MSYS=winsymlinks:nativestrict ln -s "$(pwd)/.opencode/plugin/feishu.ts" ~/.config/opencode/plugin/feishu.ts
-
-opencode plugin list        # 应看到一行 local .../plugin/feishu.ts
-```
-
-> Windows 上建符号链接需要「开发者模式」（设置 → 系统 → 开发者选项 → 打开），
-> 或以管理员身份开终端。嫌麻烦就用方式 B。
-
-### 装完之后：填凭据
-
-**不需要跑任何向导。** 启动一次 opencode：
-
-```bash
-opencode
-```
-
-插件发现没配置，会自己把模板写到 `~/.config/opencode/feishu-bridge-opencode.json`，
-并在日志里告诉你路径。打开它填两行，**存盘即生效，不用重启 opencode**：
-
-```json
-{
-  "appId": "cli_xxx",
-  "appSecret": "xxx",
-  "approvers": []
-}
-```
-
-- `appId` / `appSecret` —— 到[飞书开放平台](https://open.feishu.cn/app)建一个**企业自建应用**，
-  在「凭证与基础信息」里拿（这是唯一必须手动的部分）。
-- `approvers` —— 能点审批卡/权限卡的 open_id 白名单，**先留空也能用**，
-  之后拿到 open_id 再补。
-
-想确认凭据填对了，在克隆下来的仓库里跑一次自检（不经过 opencode，直接打飞书 API）：
-
-```bash
-FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx node scripts/check-feishu.mjs
-```
-
-不想动终端的话，直接在群里 @机器人 发 `/status`，看有没有回话也行。
-
-### 让插件常驻
-
-插件活在 opencode 进程里——**不开 opencode，飞书就找不到机器人**：
-
-```bash
-opencode service restart
-```
-
-### 完整走一遍（非开发者视角）
-
-1. 装好 opencode（你应该已经有了）。
-2. 去飞书开放平台建「企业自建应用」，拿 App ID / App Secret。
-3. 权限里勾 `im:message`、`im:message:send_as_bot`。
-4. 「事件与回调」→ 订阅方式选 **「使用长连接接收事件」**，订阅
-   `im.message.receive_v1`（要按钮回调再加 `card.action.trigger`）。
-5. 把机器人拉进群，或开单聊。
-6. 用上面的方式把插件装上。
-7. 启动 opencode，填配置模板里的 `appId` / `appSecret`。
-8. 群里 @机器人 发 `/status` —— 收到状态卡就成了。
-
-详细配置项见 [.env.example](.env.example)，每一项都能写进配置文件里的同名驼峰字段。
-
----
-
 ## 它能做什么
+
+在飞书里发消息 → 本机 opencode 干活 → 结果、授权审批、提问作答都回到飞书。
+**不需要公网、不需要服务器、不需要数据库。**
 
 | 飞书里 | 效果 |
 | --- | --- |
@@ -125,91 +29,98 @@ opencode service restart
 
 ---
 
+---
+
 ## 快速开始
 
-### 1. 飞书开放平台建应用
+> 假定你已经是 opencode 用户。整个流程只有一件麻烦事：**去飞书开放平台建一个自建应用**（第 2 步），
+> 其余都是复制粘贴。
 
-1. 建一个**企业自建应用**，拿到 `App ID` / `App Secret`。
-2. **权限**：至少开
-   - `im:message`（收发消息）
-   - `im:message:send_as_bot`
-   - 要收群消息的话再加 `im:message.group_at_msg`（或对应的接收权限）
-3. **事件与回调** → 订阅方式选 **「使用长连接接收事件」**（这是免公网的关键）。
-4. 订阅事件 **`接收消息 im.message.receive_v1`**。
-5. 需要卡片按钮回调的话，回调订阅里加上 **`卡片回传交互 card.action.trigger`**。
-6. 把机器人拉进目标群，或在单聊里对它说话。
+### 第 1 步：装插件
 
-> 长连接只支持企业自建应用。选长连接后 **不需要** `verification_token` / `encrypt_key`。
-
-### 2. 配置凭据
-
-按上面的方式装好插件后，**什么都不用跑**——启动一次 opencode：
+**一条命令**：
 
 ```bash
-opencode
+opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git
 ```
 
-插件发现没配置，会把模板写到 `~/.config/opencode/feishu-bridge-opencode.json`，并在日志里给出路径。
-打开它填两行，**存盘即生效**（插件在监听这个文件，不用重启 opencode）：
+装完**重启 opencode** 让它加载。
+
+⚠️ **如果报 `NpmInstallFailedError: git dep preparation failed`**（opencode 自带的安装器
+在部分环境下会这样），用下面这个替代方案，同样两条命令：
+
+```bash
+git clone https://github.com/parr2017/feishu-bridge-opencode.git
+cd feishu-bridge-opencode && npm install && opencode
+```
+
+原理：opencode 启动时会自动发现**当前目录下 `.opencode/plugin/` 里的插件**，
+所以在这个目录里启动就行。缺点是只在当前目录生效。
+要「任何目录都能用」，把最后一步换成建符号链接：
+
+```bash
+mkdir -p ~/.config/opencode/plugin
+MSYS=winsymlinks:nativestrict ln -s "$(pwd)/.opencode/plugin/feishu.ts" ~/.config/opencode/plugin/feishu.ts
+```
+
+（Windows 建符号链接需要「设置 → 系统 → 开发者选项 → 开发者模式」已打开；
+嫌麻烦就用上面「当前目录」那个方案。）
+
+确认装上了：
+
+```bash
+opencode plugin list     # 应看到一行 local .../feishu.ts（或包名来源）
+```
+
+### 第 2 步：建飞书应用（唯一麻烦的一步）
+
+1. 打开[飞书开放平台](https://open.feishu.cn/app)，创建一个**企业自建应用**。
+2. 「凭证与基础信息」里拿到 **App ID** 和 **App Secret**（形如 `cli_` 开头）。
+3. 「权限管理」里至少开启：
+   - `im:message`（收发消息）
+   - `im:message:send_as_bot`（以机器人身份发消息）
+   - 想在群里收到消息，再加 `im:message.group_at_msg`
+4. 「事件与回调」→ 订阅方式选 **「使用长连接接收事件」**
+   （这样不需要公网地址，是免部署的关键）。
+5. 订阅事件：
+   - `接收消息 im.message.receive_v1`（必选）
+   - 想让按钮能点，再加 `卡片回传交互 card.action.trigger`
+6. 发布应用版本，然后把机器人**拉进目标群**（或开单聊）。
+
+> 长连接只支持企业自建应用；选长连接后**不需要** `verification_token` / `encrypt_key`。
+
+### 第 3 步：填凭据
+
+启动一次 opencode，插件发现没配置会**自己把模板写到**
+`~/.config/opencode/feishu-bridge-opencode.json`，并在日志里告诉你路径。
+
+打开它，填两行，**存盘即生效（不用重启 opencode）**：
 
 ```json
 {
-  "appId": "cli_xxx",
-  "appSecret": "xxx",
+  "appId": "cli_xxxxxxxx",
+  "appSecret": "xxxxxxxx",
   "approvers": []
 }
 ```
 
-`approvers` 是能点审批卡/权限卡的 open_id 白名单，**可以先留空**——
-留空时权限请求走 opencode 自己的默认策略，之后拿到 open_id 再补。
+| 字段 | 说明 |
+| --- | --- |
+| `appId` / `appSecret` | 第 2 步拿到的，必填 |
+| `approvers` | 能点审批卡/权限卡的 open_id 白名单，**留空也能用**——之后拿到 open_id 再补 |
 
-> **克隆了仓库想开发？** 走完整向导更省事：
+### 第 4 步：常驻 + 验证
 
-```bash
-npm install && npm run setup
-```
-
-它会当场校验凭据、写配置、装全局链接、补依赖。非交互版（脚本/CI 用）：
+插件活在 opencode 进程里，**不开 opencode 飞书就找不到机器人**，所以推荐常驻：
 
 ```bash
-node scripts/setup.mjs --app-id cli_xxx --app-secret xxx --approvers ou_a,ou_b --yes
+opencode service restart
 ```
 
-### 3. 起 opencode
+然后在飞书群里 @机器人 发 **`/status`**：
 
-```bash
-opencode service restart    # 常驻后台（推荐——插件活在 opencode 进程里，不开它飞书找不到机器人）
-```
-
-### 4. 验证
-
-在飞书里对机器人发 `/status`。看到绑定状态和长连接状态就成了。
-然后直接发一句「列出当前目录的文件」，等完成卡回来。
-
-### 5. 配置优先级与手改
-
-优先级：**环境变量 > 配置文件 > 默认值**。
-配置文件按顺序找第一个存在的：
-
-```
-$FEISHU_CONFIG_FILE
-<cwd>/.opencode/feishu.json                  项目级
-~/.config/opencode/feishu-bridge-opencode.json      全局（向导写这里）
-```
-
-想临时覆盖某项（比如开 debug 日志），直接给环境变量即可，不用改文件：
-
-```bash
-FEISHU_LOG_LEVEL=debug opencode service restart
-```
-
-所有可配项见 [.env.example](.env.example)——文件名里的每一项都能写进配置文件的同名驼峰字段。
-
-### 6. 挂载方式说明
-
-「怎么对接 opencode」这件事有三条路（自动发现 / 配置包规格 / 符号链接），
-以及几条**实测走不通**的路（本地路径配 `plugin`、`opencode plugin add <本地目录>` 等）。
-完整结论和证据见 [docs/opencode-integration.md](docs/opencode-integration.md)。
+- 收到一张状态卡 = **成了**。
+- 没反应 → 看[常见问题](#常见问题)。
 
 ---
 
