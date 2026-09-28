@@ -132,26 +132,37 @@ CI 会在 push / PR 时跑：类型检查、45 条自测、以及「`dist/` 是�
 
 ## 5. 已经验证到什么程度（别重复踩）
 
-**验证过的**
+**已验证**
 
-- 包结构正确：`npm install <git-spec>` 能装出完整可用的包
-  （`index.js` / `dist/` / 依赖齐全），`import` 出来是 `{ id, setup }`。
-- 入口两种约定都满足：包根 `index.js`（opencode 文档里的说法）
-  和 `main: dist/index.js`（实测 opencode 对另一个包用的就是这个）。
+- **远端仓库内容完整**：用 SSH 克隆 `git@github.com:parr2017/feishu-bridge-opencode.git`，
+  `npm install` 后 `import('./index.js')` 得到 `{ id: 'feishu-bridge-opencode' }`。
+  这就是用户装包时会拿到的东西——入口、`dist/`、依赖声明都对。
+- 包结构正确：`npm install <git-spec>` 能装出完整可用的包。
+- 入口两种约定都满足：包根 `index.js`，以及 `main: dist/index.js`。
 - 插件本体：opencode 2.0.16 里能加载、权限闸门能挂、`question` 工具能接管。
-- 配置自举 + 热加载：有单测（`npm run selftest`）。
+- 配置自举 + 热加载：有单测（`npm run selftest`，45 条断言）。
 
-**没验证到的（本机环境限制）**
+**未验证（本机网络限制）**
 
-- **真实的 `git+https://github.com/...` 安装**——这台机器访问 GitHub 被重置，拉不下来。
-- **npm registry 安装**——需要真的发布，那是公开动作，没做。
-- 顺带发现：opencode 内置的安装器（Bun 实现）对 `git+file://` 本地 URL 会报
-  `git dep preparation failed`，而同样 spec 用 `npm install` 是成功的。
-  所以「本地 git URL 装不上」**不代表** `git+https` 也会失败，但也确实没验证过。
+- **`opencode plugin add <git+https://...>` 这条命令本身没跑通**——
+  开发这台机器**访问 github.com 的 443 端口被封**（SSH 22 通，HTTPS 不通）。
+  所以走 HTTPS 的 clone 在这里做不到，命令无法端到端验证。
+  （远端内容本身已经用 SSH 克隆验证过了，见上。）
 
-第一次真发出去之后，建议自己先用方式 A 在一台干净机器上装一遍确认。
+- **npm registry 安装**——`registry.npmjs.org` 从这里可达（HTTP 200），
+  但需要先 `npm login` + `npm publish`，那是公开动作，没做。
 
----
+**给你的实操建议**
+
+如果你本机也访问不了 github.com 的 HTTPS，`opencode plugin add <git+https>` 对你也用不了。
+两条出路：
+
+1. **发到 npm**（推荐）——npm registry 从这台机器可达，用户装的是
+   `opencode plugin add feishu-bridge-opencode`，不依赖 GitHub。
+2. 给终端配 HTTPS 代理，再走 git URL。
+
+另外记得确认 GitHub 仓库是 **Public**（Settings → General → 最下面 Change visibility）——
+opencode 装包时不带凭据，私有仓库拉不下来。
 
 ## 6. 开源清单
 
