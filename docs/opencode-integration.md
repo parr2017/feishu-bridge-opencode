@@ -183,29 +183,33 @@ FEISHU_LOG_LEVEL=debug opencode service restart
 
 ---
 
-## 3.5 ⚠️ 全局符号链接必须配全局依赖（踩过）
+## 3.5 全局符号链接的一个已知坑（遇到再修）
 
 **症状**：插件明明在 `opencode plugin list` 里，但加载失败：
 
 ```
-WARN failed to load plugin target="C:\Users\nw02\.config\opencode\plugin\opencode-feishu.ts"
+WARN failed to load plugin target="...\.config\opencode\plugineishu.ts"
      cause="Cannot find package '@larksuiteoapi/node-sdk'
-            imported from D:\pxx\opencode-mobile\src\feishu\gateway.ts"
+            imported from <项目路径>\srceishu\gateway.ts"
 ```
 
-**原因**：符号链接加载时，bare import 是从**链接所在目录**往上找 `node_modules` 的，
-不是从真实路径。链接在 `~/.config/opencode/plugin/`，那里没有这个依赖。
-
-**修法**（`npm run setup` 会自动做）：
+**修法**：把依赖装进 `~/.config/opencode/`（它本身就是个正常 npm 项目，
+`opencode plugin add` 装的包也是装在那里）：
 
 ```bash
 cd ~/.config/opencode && npm install @larksuiteoapi/node-sdk
 ```
 
-`~/.config/opencode/` 本身是个正常的 npm 项目（有 `package.json` + `node_modules`），
-`opencode plugin add` 装的包也是装在这里——所以往这里装依赖是和 opencode 自己的做法一致的。
+**但这可能不是必须的**。后来复核时删掉 `~/.config/opencode/node_modules/@larksuiteoapi`，
+再用符号链接从别的目录启动（`opencode run --standalone`），插件**照样加载正常**——
+说明 Bun 在这条路径上会按符号链接的**真实路径**解析，用的是项目里的 `node_modules`。
+
+结论：**遇到上面那个报错就按这个修，但别当成前置必做步骤**。
+两种行为的差异可能和 opencode 版本、或后台服务 vs standalone 有关，没有完全定位。
+`npm run setup` 里保留了「缺依赖就顺手装一个」的保险动作。
 
 ---
+
 
 ## 4. 要分发给别人用，需要打包
 
