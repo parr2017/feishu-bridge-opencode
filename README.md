@@ -1,4 +1,4 @@
-# opencode-plugin-feishu
+# feishu-bridge-opencode
 
 把**飞书**接入 **opencode** 的插件。在飞书里发消息，本机 opencode 干活，结果、授权审批、提问作答都在飞书闭环。
 
@@ -13,14 +13,14 @@
 **一条命令**（装完重启 opencode 即可）：
 
 ```bash
-opencode plugin add opencode-plugin-feishu@git+https://github.com/<你的用户名>/opencode-plugin-feishu.git
+opencode plugin add feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git
 ```
 
 或者写进 `~/.config/opencode/opencode.json`：
 
 ```jsonc
 {
-  "plugins": ["opencode-plugin-feishu@git+https://github.com/<你的用户名>/opencode-plugin-feishu.git"]
+  "plugins": ["feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git"]
 }
 ```
 
@@ -28,7 +28,7 @@ opencode plugin add opencode-plugin-feishu@git+https://github.com/<你的用户�
 > 这是实测出来的，写错了条目会被静默忽略。
 
 装完之后**不需要跑任何向导**：启动 opencode，插件发现你没配置会自己把配置模板写到
-`~/.config/opencode/opencode-feishu.json`，并告诉你去哪填。填好 `appId` / `appSecret`
+`~/.config/opencode/feishu-bridge-opencode.json`，并告诉你去哪填。填好 `appId` / `appSecret`
 **存盘即生效，不用重启 opencode**。
 
 （如果你克隆了仓库想开发，见下面的「开发」一节。）
@@ -77,7 +77,7 @@ opencode plugin add opencode-plugin-feishu@git+https://github.com/<你的用户�
 opencode
 ```
 
-插件发现没配置，会把模板写到 `~/.config/opencode/opencode-feishu.json`，并在日志里给出路径。
+插件发现没配置，会把模板写到 `~/.config/opencode/feishu-bridge-opencode.json`，并在日志里给出路径。
 打开它填两行，**存盘即生效**（插件在监听这个文件，不用重启 opencode）：
 
 ```json
@@ -122,7 +122,7 @@ opencode service restart    # 常驻后台（推荐——插件活在 opencode �
 ```
 $FEISHU_CONFIG_FILE
 <cwd>/.opencode/feishu.json                  项目级
-~/.config/opencode/opencode-feishu.json      全局（向导写这里）
+~/.config/opencode/feishu-bridge-opencode.json      全局（向导写这里）
 ```
 
 想临时覆盖某项（比如开 debug 日志），直接给环境变量即可，不用改文件：
@@ -146,7 +146,7 @@ FEISHU_LOG_LEVEL=debug opencode service restart
 **优先级：环境变量 > 配置文件 > 默认值。**
 
 推荐用 `npm run setup` 生成配置文件（见上文「快速开始」）。想手工改就直接编辑
-`~/.config/opencode/opencode-feishu.json`：
+`~/.config/opencode/feishu-bridge-opencode.json`：
 
 ```json
 {

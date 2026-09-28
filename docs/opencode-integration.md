@@ -119,7 +119,7 @@ superpowers 文档里提到：「Discovered plugin symlinks remain supported」�
 
    ```
    WARN 飞书插件未启用：缺少 app_id / app_secret
-   WARN 已生成配置模板 → C:\Users\nw02\.config\opencode\opencode-feishu.json
+   WARN 已生成配置模板 → C:\Users\nw02\.config\opencode\feishu-bridge-opencode.json
         填好 appId / appSecret 保存即可，插件会自动接上（不用重启 opencode）。
    INFO 正在监听配置文件变化（保存即生效）
    ```
@@ -151,14 +151,14 @@ npm run setup
 ```
 $FEISHU_CONFIG_FILE
 <cwd>/.opencode/feishu.json                  项目级
-~/.config/opencode/opencode-feishu.json      全局（向导/自举都写这里）
+~/.config/opencode/feishu-bridge-opencode.json      全局（向导/自举都写这里）
 ```
 
 实测确认：从 `C:\Users\nw02` 启动 opencode，插件日志里能看到
 
 ```
 飞书插件已就绪 {"directory":"C:\\Users\\nw02",
-              "config":"C:\\Users\\nw02\\.config\\opencode\\opencode-feishu.json",
+              "config":"C:\\Users\\nw02\\.config\\opencode\\feishu-bridge-opencode.json",
               "approvers":2}
 ```
 

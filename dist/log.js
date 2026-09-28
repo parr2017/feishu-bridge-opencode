@@ -14,7 +14,7 @@ function emit(level, msg, extra) {
     if (ORDER[level] < threshold)
         return;
     const tail = extra === undefined ? '' : ` ${safe(extra)}`;
-    const line = `${new Date().toISOString()} [opencode-plugin-feishu] ${level.toUpperCase()} ${msg}${tail}`;
+    const line = `${new Date().toISOString()} [feishu-bridge-opencode] ${level.toUpperCase()} ${msg}${tail}`;
     process.stderr.write(`${line}\n`);
     if (file) {
         try {

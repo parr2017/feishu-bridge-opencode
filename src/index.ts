@@ -14,7 +14,7 @@
 import { startPlugin } from './plugin.ts';
 
 export default {
-  id: 'opencode-plugin-feishu',
+  id: 'feishu-bridge-opencode',
   async setup(ctx: unknown): Promise<void> {
     await startPlugin(ctx);
   },

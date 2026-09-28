@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * opencode-plugin-feishu 引导配置。
+ * feishu-bridge-opencode 引导配置。
  *
  *   npm run setup
  *
  * 做四件事：
  *   1. 问你要飞书应用凭据（并当场校验）
  *   2. 问审批白名单 / 测试消息落点
- *   3. 把配置写进 ~/.config/opencode/opencode-feishu.json
+ *   3. 把配置写进 ~/.config/opencode/feishu-bridge-opencode.json
  *   4. 装全局符号链接（这样在任何目录启动 opencode 都能用）
  *
  * 也支持非交互（给脚本/CI 用）：
@@ -22,8 +22,8 @@ import { execFileSync } from 'node:child_process';
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN_ENTRY = join(PROJECT_ROOT, '.opencode', 'plugin', 'feishu.ts');
 const OPENCODE_DIR = join(homedir(), '.config', 'opencode');
-const CONFIG_PATH = join(OPENCODE_DIR, 'opencode-feishu.json');
-const PLUGIN_LINK = join(OPENCODE_DIR, 'plugin', 'opencode-plugin-feishu.ts');
+const CONFIG_PATH = join(OPENCODE_DIR, 'feishu-bridge-opencode.json');
+const PLUGIN_LINK = join(OPENCODE_DIR, 'plugin', 'feishu-bridge-opencode.ts');
 
 // ---------------------------------------------------------------- 终端
 
@@ -158,7 +158,7 @@ async function sendTestMessage(token, apiBase, chatId) {
 // ---------------------------------------------------------------- 主流程
 
 say('');
-say(C.bold('  opencode-plugin-feishu 引导配置'));
+say(C.bold('  feishu-bridge-opencode 引导配置'));
 say(C.dim('  ─────────────────────────────────────────────'));
 say('');
 say('  这一步会：');

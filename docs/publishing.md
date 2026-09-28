@@ -4,21 +4,32 @@
 
 ---
 
-## 0. 先确认包名（重要）
+## 0. 包名：`feishu-bridge-opencode`
 
-**`opencode-feishu` 这个名字在 npm 上已经被占了**（v1.10.10，来自 `NeverMore93/opencode-feishu`）。
+**为什么不用 `opencode-feishu`**：这个名字在 npm 上已经被占了
+（v1.10.10，来自 `NeverMore93/opencode-feishu`）。
 
 实测过：如果你的配置写 `"plugins": ["opencode-feishu"]`，opencode 会去 registry 装**别人的包**，
-不是你的。所以本项目用的是 **`opencode-plugin-feishu`**（已确认可用）。
+不是你的——我第一次测试就是这么被坑的（装出来的包里 `main` 是 `dist/index.js`，来自另一个项目）。
 
-其他当时可用的名字：`feishu-opencode`、`opencode-feishu-connector`、`feishu-bridge-opencode`。
-想换就改 `package.json` 的 `name` 和 `src/index.ts` 里的 `id`（两处保持一致）。
+所以本项目用 **`feishu-bridge-opencode`**（发版前实测确认 npm 上 404，可用）。
 
-发布前再确认一次名字没被抢：
+发布前再确认一次没被抢：
 
 ```bash
-npm view <包名> version    # 报 404 就是可用
+npm view feishu-bridge-opencode version    # 报 404 就是可用
 ```
+
+要换名字的话，改这几处并保持一致：
+
+| 位置 | 字段 |
+| --- | --- |
+| `package.json` | `name`、`bin` 的键 |
+| `src/index.ts` | 插件 `id` |
+| `src/log.ts` | 日志前缀 |
+| `src/config.ts` | 配置文件名（`defaultConfigPath()`） |
+| `scripts/setup.mjs` | `CONFIG_PATH`、`PLUGIN_LINK`、横幅文案 |
+| `README.md` / `docs/` | 安装命令与路径 |
 
 ---
 
@@ -49,7 +60,7 @@ npm run build && git add -A && git commit
 ## 2. 推到 GitHub
 
 ```bash
-git remote add origin https://github.com/<你的用户名>/opencode-plugin-feishu.git
+git remote add origin https://github.com/<你的用户名>/feishu-bridge-opencode.git
 git branch -M main
 git push -u origin main
 ```
@@ -61,14 +72,14 @@ git push -u origin main
 ### 方式 A：git 直装（推荐，不需要发 npm）
 
 ```bash
-opencode plugin add opencode-plugin-feishu@git+https://github.com/<你的用户名>/opencode-plugin-feishu.git
+opencode plugin add feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git
 ```
 
 或手写配置 `~/.config/opencode/opencode.json`：
 
 ```jsonc
 {
-  "plugins": ["opencode-plugin-feishu@git+https://github.com/<你的用户名>/opencode-plugin-feishu.git"]
+  "plugins": ["feishu-bridge-opencode@git+https://github.com/<你的用户名>/feishu-bridge-opencode.git"]
 }
 ```
 
@@ -78,7 +89,7 @@ opencode plugin add opencode-plugin-feishu@git+https://github.com/<你的用户�
 想钉版本就加 `#tag`：
 
 ```jsonc
-{ "plugins": ["opencode-plugin-feishu@git+https://github.com/<你>/opencode-plugin-feishu.git#v0.1.0"] }
+{ "plugins": ["feishu-bridge-opencode@git+https://github.com/<你>/feishu-bridge-opencode.git#v0.1.0"] }
 ```
 
 ### 方式 B：发到 npm
@@ -91,7 +102,7 @@ npm publish --access public
 之后用户：
 
 ```bash
-opencode plugin add opencode-plugin-feishu
+opencode plugin add feishu-bridge-opencode
 ```
 
 `package.json` 里已经有 `prepack: npm run build`，发布时会自动重新构建一遍。
@@ -99,7 +110,7 @@ opencode plugin add opencode-plugin-feishu
 ### 装完之后
 
 **用户不需要跑任何向导。** 启动 opencode，插件会自己把配置模板写到
-`~/.config/opencode/opencode-feishu.json` 并在日志里给出路径；用户填两行存盘即生效
+`~/.config/opencode/feishu-bridge-opencode.json` 并在日志里给出路径；用户填两行存盘即生效
 （插件在监听这个文件）。详见 [opencode-integration.md](./opencode-integration.md) §3.0。
 
 ---

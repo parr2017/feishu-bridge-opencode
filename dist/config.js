@@ -10,7 +10,7 @@
  * 配置文件按顺序找第一个存在的：
  *   $FEISHU_CONFIG_FILE
  *   <cwd>/.opencode/feishu.json          项目级
- *   ~/.config/opencode/opencode-feishu.json   全局（推荐，任何目录都能用）
+ *   ~/.config/opencode/feishu-bridge-opencode.json   全局（推荐，任何目录都能用）
  *
  * 用 `npm run setup` 生成配置文件。
  */
@@ -19,7 +19,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 /** 全局配置文件默认位置（向导写这里）。 */
 export function defaultConfigPath() {
-    return join(homedir(), '.config', 'opencode', 'opencode-feishu.json');
+    return join(homedir(), '.config', 'opencode', 'feishu-bridge-opencode.json');
 }
 export function configFileCandidates(cwd) {
     const out = [];
