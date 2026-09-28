@@ -5,7 +5,7 @@
   "type": "module",
   "description": "把飞书接入 opencode 的插件：在飞书里发消息驱动 opencode，执行结果 / 授权审批 / 提问作答都在飞书闭环。",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json",
     "setup": "node scripts/setup.mjs",
     "typecheck": "tsc --noEmit",
     "selftest": "tsc -p tsconfig.test.json && node .test-build/test/selftest.js",
