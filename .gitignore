@@ -1,0 +1,9 @@
+node_modules/
+.env
+*.log
+probe*.ts
+probe*.log
+.opencode/plugin/*.local.ts
+
+# 自测构建产物
+.test-build/

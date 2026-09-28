@@ -1,0 +1,50 @@
+{
+  "name": "opencode-feishu",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "把飞书接入 opencode 的插件：在飞书里发消息驱动 opencode，执行结果 / 授权审批 / 提问作答都在飞书闭环。",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "setup": "node scripts/setup.mjs",
+    "typecheck": "tsc --noEmit",
+    "selftest": "tsc -p tsconfig.test.json && node .test-build/test/selftest.js",
+    "check": "node scripts/check-feishu.mjs",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.74.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  },
+  "bin": {
+    "opencode-feishu": "./scripts/setup.mjs"
+  },
+  "files": [
+    "index.js",
+    "dist",
+    "scripts",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "feishu",
+    "lark",
+    "bot",
+    "agent"
+  ]
+}
