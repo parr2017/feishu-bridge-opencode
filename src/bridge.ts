@@ -145,10 +145,16 @@ export class Bridge {
     this.pending.clear();
   }
 
+  /**
+   * 会话 → 飞书落点。三级回落：
+   *   1. 该 opencode 会话绑定的飞书会话（正常情况）
+   *   2. 配置文件里的固定落点 notifyChatId
+   *   3. 「最后一次和机器人说话的那个会话」（动态记忆）
+   */
   private async chatForSession(sessionId: string): Promise<string | null> {
     if (!sessionId) return null;
     const binding = await this.state.findBySession(sessionId);
-    return binding?.chatId ?? (await this.state.getNotifyChat());
+    return binding?.chatId ?? this.cfg.notifyChatId ?? (await this.state.getNotifyChat());
   }
 
   // ---------------------------------------------------------------- opencode 事件

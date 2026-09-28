@@ -19,8 +19,6 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import type { LogLevel } from './log.ts';
 
-export type SessionMode = 'new-per-chat' | 'shared';
-
 export interface FeishuConfig {
   appId: string;
   appSecret: string;
@@ -33,7 +31,6 @@ export interface FeishuConfig {
   webhookPort?: number;
   encryptKey?: string;
   verificationToken?: string;
-  sessionMode: SessionMode;
   logLevel: LogLevel;
   logFile?: string;
   /** 实际生效的配置文件路径（没读到就是 undefined）——启动日志里会打出来 */
@@ -110,7 +107,6 @@ export function loadConfig(options: Raw = {}, cwd: string = process.cwd()): Feis
   const apiBase = (pick(options, file, 'FEISHU_API_BASE', 'apiBase') ?? 'https://open.feishu.cn').replace(/\/+$/, '');
   const portRaw = pick(options, file, 'FEISHU_WEBHOOK_PORT', 'webhookPort');
   const port = portRaw ? Number(portRaw) : undefined;
-  const sessionModeRaw = pick(options, file, 'FEISHU_SESSION_MODE', 'sessionMode');
 
   return {
     appId: pick(options, file, 'FEISHU_APP_ID', 'appId') ?? '',
@@ -122,7 +118,6 @@ export function loadConfig(options: Raw = {}, cwd: string = process.cwd()): Feis
     webhookPort: Number.isInteger(port) && port! > 0 ? port : undefined,
     encryptKey: pick(options, file, 'FEISHU_ENCRYPT_KEY', 'encryptKey'),
     verificationToken: pick(options, file, 'FEISHU_VERIFICATION_TOKEN', 'verificationToken'),
-    sessionMode: sessionModeRaw === 'shared' ? 'shared' : 'new-per-chat',
     logLevel: (pick(options, file, 'FEISHU_LOG_LEVEL', 'logLevel') as LogLevel) ?? 'info',
     logFile: pick(options, file, 'FEISHU_LOG_FILE', 'logFile'),
     ...(found ? { configPath: found.path } : {}),
