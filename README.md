@@ -1,10 +1,37 @@
-# opencode-feishu
+# opencode-plugin-feishu
 
-把**飞书**接入 **opencode** 的插件。在飞书里发消息，本机 opencode 干活，结果和授权请求回到飞书。
+把**飞书**接入 **opencode** 的插件。在飞书里发消息，本机 opencode 干活，结果、授权审批、提问作答都在飞书闭环。
 
 - 目标运行时：`@opencode/cli` **2.x**（本机实测 2.0.16）
 - 入站：飞书**长连接**（出站 WebSocket，**不需要公网**），可选 HTTP webhook
 - 依赖：`@larksuiteoapi/node-sdk`（仅长连接用）+ Node 内置模块，无 Redis / 无数据库 / 无独立服务进程
+
+---
+
+## 安装
+
+**一条命令**（装完重启 opencode 即可）：
+
+```bash
+opencode plugin add opencode-plugin-feishu@git+https://github.com/<你的用户名>/opencode-plugin-feishu.git
+```
+
+或者写进 `~/.config/opencode/opencode.json`：
+
+```jsonc
+{
+  "plugins": ["opencode-plugin-feishu@git+https://github.com/<你的用户名>/opencode-plugin-feishu.git"]
+}
+```
+
+> ⚠️ 注意是 **`plugins`（复数）**——这是 opencode **V2** 的配置键，V1 才是 `plugin`。
+> 这是实测出来的，写错了条目会被静默忽略。
+
+装完之后**不需要跑任何向导**：启动 opencode，插件发现你没配置会自己把配置模板写到
+`~/.config/opencode/opencode-feishu.json`，并告诉你去哪填。填好 `appId` / `appSecret`
+**存盘即生效，不用重启 opencode**。
+
+（如果你克隆了仓库想开发，见下面的「开发」一节。）
 
 ---
 
@@ -42,43 +69,43 @@
 
 > 长连接只支持企业自建应用。选长连接后 **不需要** `verification_token` / `encrypt_key`。
 
-### 2. 一条命令搞定配置
+### 2. 配置凭据
+
+按上面的方式装好插件后，**什么都不用跑**——启动一次 opencode：
 
 ```bash
-cd D:/pxx/opencode-mobile
-npm install          # 装 @larksuiteoapi/node-sdk
-npm run setup        # 引导配置：校验凭据 → 写配置 → 装全局链接
+opencode
 ```
 
-向导会问你四件事，其他都自动做掉：
+插件发现没配置，会把模板写到 `~/.config/opencode/opencode-feishu.json`，并在日志里给出路径。
+打开它填两行，**存盘即生效**（插件在监听这个文件，不用重启 opencode）：
 
-| 问什么 | 说明 |
-| --- | --- |
-| App ID / App Secret | 当场打飞书 API 校验，抄错了立刻告诉你 |
-| 审批白名单 | 能点审批卡/权限卡的 open_id，逗号分隔，**可留空后补** |
-| 测试 chat_id | 可选；填了当场发一条测试消息确认通道通 |
+```json
+{
+  "appId": "cli_xxx",
+  "appSecret": "xxx",
+  "approvers": []
+}
+```
 
-然后它会：
+`approvers` 是能点审批卡/权限卡的 open_id 白名单，**可以先留空**——
+留空时权限请求走 opencode 自己的默认策略，之后拿到 open_id 再补。
 
-- 把配置写到 `~/.config/opencode/opencode-feishu.json`（含 Secret，权限 600）
-- 在 `~/.config/opencode/plugin/` 建**符号链接**指向本项目插件 —— 这样**在任何目录**启动 opencode 都能用
-
-非交互（脚本/CI 用）：
+> **克隆了仓库想开发？** 走完整向导更省事：
 
 ```bash
-node scripts/setup.mjs --app-id cli_xxx --app-secret xxx \
-  --approvers ou_a,ou_b --chat-id oc_xxx --yes
+npm install && npm run setup
 ```
 
-> **没有仓库、只是装了插件？** 那就不需要向导。插件首次启动发现没配置时，会
-> **自动把配置模板写到** `~/.config/opencode/opencode-feishu.json` 并在日志里给出路径；
-> 你填好 `appId` / `appSecret` **存盘即生效，不用重启 opencode**（插件在监听这个文件）。
-> 详见 [docs/opencode-integration.md](docs/opencode-integration.md) §3.0。
+它会当场校验凭据、写配置、装全局链接、补依赖。非交互版（脚本/CI 用）：
+
+```bash
+node scripts/setup.mjs --app-id cli_xxx --app-secret xxx --approvers ou_a,ou_b --yes
+```
 
 ### 3. 起 opencode
 
 ```bash
-opencode plugin list        # 应看到 local .../plugin/opencode-feishu.ts
 opencode service restart    # 常驻后台（推荐——插件活在 opencode 进程里，不开它飞书找不到机器人）
 ```
 
@@ -181,6 +208,9 @@ grep `loading plugin` / `failed to load plugin`。
   `setup` 按 location 跑、hook 名不校验。
 - [docs/coteam-feishu-analysis.md](docs/coteam-feishu-analysis.md)
   —— co-team 里 opencode × 飞书 的源码分析：哪些能搬、哪些在插件形态下多余。
+- [docs/publishing.md](docs/publishing.md)
+  —— **发布指南**：包名确认、推 GitHub、用户的一条命令安装、发版流程、
+  以及「已经验证到什么程度 / 哪些没验证」。
 - [docs/architecture.md](docs/architecture.md)
   —— 架构、功能对照表（搬了什么 / 为什么有些没搬）、关键流程、已知限制。
 - [docs/opencode-integration.md](docs/opencode-integration.md)
@@ -192,11 +222,15 @@ grep `loading plugin` / `failed to load plugin`。
 ## 开发
 
 ```bash
+npm install           # 装依赖
+npm run build         # 编译 src/ → dist/（dist 是提交进仓库的，改完 src 记得跑）
 npm run setup         # 引导配置（校验凭据 → 写配置 → 装全局链接）
 npm run typecheck     # 类型检查
-npm run selftest      # 纯逻辑自测（42 条断言，不需要 opencode / 不需要飞书凭据）
+npm run selftest      # 纯逻辑自测（45 条断言，不需要 opencode / 不需要飞书凭据）
 npm run check         # 飞书凭据自检（独立于插件，直接打飞书 API）
 ```
+
+> `dist/` 与 `src/` 必须同步提交（CI 会检查）。
 
 `selftest` 覆盖卡片 2.0 构件、权限载荷归一、表单字段映射与状态机、四类列表卡与翻页、面板卡。
 它把 `src/` 用 tsc 编译到 `.test-build/` 再交给 node 跑，所以不引 vitest/jest 这类测试运行时。
@@ -204,7 +238,10 @@ npm run check         # 飞书凭据自检（独立于插件，直接打飞书 A
 目录结构：
 
 ```
-.opencode/plugin/feishu.ts   opencode 插件入口（default export { id, setup }）
+index.js                     包入口（opencode 约定），转发到 dist/index.js
+dist/                        构建产物（提交进仓库，让安装方零构建步骤）
+.github/workflows/ci.yml     类型检查 + 自测 + 校验 dist 与 src 同步
+.opencode/plugin/feishu.ts   项目内直挂入口（开发用）
 src/plugin.ts                ctx 适配 + 单例守卫
 src/bridge.ts                opencode ↔ 飞书 核心（事件流、权限闸门、卡片路由、收件箱）
 src/ask.ts                   接管 question 工具：提问走飞书作答

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 纯逻辑自测
+        run: npm run selftest
+
+      # dist/ 是提交进仓库的（让安装方零构建步骤）。这里守住它别和 src/ 脱节。
+      - name: 确认 dist/ 与 src/ 同步
+        run: |
+          npm run build
+          if ! git diff --quiet -- dist; then
+            echo "::error::dist/ 与 src/ 不同步——本地跑 npm run build 后一起提交"
+            git --no-pager diff --stat -- dist
+            exit 1
+          fi
+          echo "dist/ 与 src/ 一致 ✅"

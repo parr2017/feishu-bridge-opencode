@@ -31,9 +31,9 @@
     "docs"
   ],
   "license": "MIT",
-  "main": "index.js",
+  "main": "dist/index.js",
   "exports": {
-    ".": "./index.js",
+    ".": "./dist/index.js",
     "./package.json": "./package.json"
   },
   "engines": {
