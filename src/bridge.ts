@@ -487,7 +487,8 @@ export class Bridge {
           '**状态**',
           `目录：${this.api.directory}`,
           `长连接：${gw.ws} · webhook：${gw.webhook}`,
-          `审批白名单：${this.cfg.approvers.length ? `${this.cfg.approvers.length} 人` : '未配置（卡片不可点）'}`,
+          `审批白名单：${this.cfg.approvers.length ? `${this.cfg.approvers.length} 人` : '未配置（审批按钮不可点）'}`,
+          `你的 open_id：\`${msg.openId}\`${this.cfg.approvers.includes(msg.openId) ? '' : ' ← 把它加进配置的 approvers 才能点审批按钮'}`,
           `绑定会话：${binding ? `${binding.title}（${binding.sessionId.slice(0, 12)}）` : '未绑定'}`,
           binding?.model ? `模型：${binding.model}` : '',
           binding?.agent ? `Agent：${binding.agent}` : '',
@@ -652,8 +653,34 @@ export class Bridge {
       // 提问卡：交给 AskBridge（它自己校验白名单）
       if (act.startsWith('ask_')) return await this.ask.handleAction(input);
 
+      // 只读浏览类动作：翻页 / 看列表，不改任何状态，**不需要白名单**。
+      // （之前这类也被拦，导致空白名单时连列表翻页都点不动——实测踩过。）
+      if (act === 'oc_list_page') {
+        // ⚠️ 必须和 /list 用同一个数据源——之前这里还在读旧的绑定列表，
+        //    翻页翻出来的是另一份数据，表现为「翻页失效」。
+        return cardResponse(await this.sessionsCard(Number(params.page ?? 0) || 0, input.chatId ?? ''));
+      }
+      if (act === 'oc_models_page') {
+        return cardResponse(buildModelsCard(await this.api.listModels().catch(() => []), Number(params.page ?? 0) || 0));
+      }
+      if (act === 'oc_agents_page') {
+        return cardResponse(buildAgentsCard(await this.api.listAgents().catch(() => []), Number(params.page ?? 0) || 0));
+      }
+      if (act === 'inbox_page') {
+        return cardResponse(buildInboxCard(await this.collectInbox(), Number(params.page ?? 0) || 0));
+      }
+
+      // ↓↓ 从这里开始是会改变 opencode 状态 / 替人做决定的动作，必须过白名单 ↓↓
       if (!this.cfg.approvers.length || !this.cfg.approvers.includes(who)) {
-        return reply('⛔ 无权操作', [`操作人 \`${who}\` 不在审批白名单内。`]);
+        // 拒绝的同时把「怎么解决」说清楚——open_id 就在眼前，别让用户再去翻日志
+        return reply('⛔ 无权操作', [
+          `操作人 \`${who}\` 不在审批白名单内。`,
+          '',
+          '**加入白名单**：',
+          '1. 发 `/status` 可看到配置文件路径和你的 open_id',
+          '2. 把你的 open_id 加进配置的 `approvers` 数组',
+          '3. `opencode service restart`',
+        ]);
       }
 
       switch (act) {
@@ -682,17 +709,6 @@ export class Bridge {
             return reply('⏱ 权限已失效', [String((e as Error)?.message ?? e).slice(0, 160)]);
           }
         }
-
-        case 'oc_list_page':
-          // ⚠️ 必须和 /list 用同一个数据源——之前这里还在读旧的绑定列表，
-          //    翻页翻出来的是另一份数据，表现为「翻页失效」。
-          return cardResponse(await this.sessionsCard(Number(params.page ?? 0) || 0, input.chatId ?? ''));
-
-        case 'oc_models_page':
-          return cardResponse(buildModelsCard(await this.api.listModels().catch(() => []), Number(params.page ?? 0) || 0));
-
-        case 'oc_agents_page':
-          return cardResponse(buildAgentsCard(await this.api.listAgents().catch(() => []), Number(params.page ?? 0) || 0));
 
         case 'oc_pick_session': {
           const sid = String(params.session_id ?? '');
@@ -763,10 +779,6 @@ export class Bridge {
           } catch {
             return reply('⏱ 会话已结束', [sid.slice(0, 12)]);
           }
-        }
-
-        case 'inbox_page': {
-          return cardResponse(buildInboxCard(await this.collectInbox(), Number(params.page ?? 0) || 0));
         }
 
         case 'inbox_open': {
