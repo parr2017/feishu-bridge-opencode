@@ -5,11 +5,11 @@
   "type": "module",
   "description": "把飞书接入 opencode 的插件：在飞书里发消息驱动 opencode，执行结果 / 授权审批 / 提问作答都在飞书闭环。",
   "scripts": {
-    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json",
     "setup": "node scripts/setup.mjs",
     "typecheck": "tsc --noEmit",
     "selftest": "tsc -p tsconfig.test.json && node .test-build/test/selftest.js",
-    "check": "node scripts/check-feishu.mjs"
+    "check": "node scripts/check-feishu.mjs",
+    "compile": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.74.0"
@@ -31,10 +31,6 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "exports": {
-    ".": "./dist/index.js",
-    "./package.json": "./package.json"
-  },
   "engines": {
     "node": ">=20"
   },
