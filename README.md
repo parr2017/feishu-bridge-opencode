@@ -288,17 +288,19 @@ opencode plugin list     # 应看到一行 local .../feishu.ts（或包名来源
 
 ### 第 3 步：填凭据
 
-**两种方式任选。**
+**三种方式任选。**
 
-**方式 A（最省事）：再跑一次向导**
+**方式 A（最省事）：跑向导**
 
 ```bash
-npm run setup
+npx github:parr2017/feishu-bridge-opencode
 ```
 
 它会：校验凭据 → 写配置 → 重启服务 → 确认长连接 → **让你在群里发一句话，
 自动把你的 open_id 抓进白名单、记住这个群** → 最后给群里发一条确认消息。
 全程你只需要粘贴 App ID / App Secret，和在群里说一句话。
+
+（克隆了仓库的话，在仓库里跑 `npm run setup` 等价。）
 
 **方式 B：手动填**
 
