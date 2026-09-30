@@ -9,8 +9,7 @@
     "setup": "node scripts/setup.mjs",
     "typecheck": "tsc --noEmit",
     "selftest": "tsc -p tsconfig.test.json && node .test-build/test/selftest.js",
-    "check": "node scripts/check-feishu.mjs",
-    "prepack": "npm run build"
+    "check": "node scripts/check-feishu.mjs"
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.74.0"
