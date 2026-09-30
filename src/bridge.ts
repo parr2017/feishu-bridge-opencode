@@ -505,14 +505,44 @@ export class Bridge {
       },
 
       switchSession: async (ref) => {
-        if (!ref) return '用法：`/switch <序号>`（先用 /list 看列表）';
+        if (!ref) return '用法：`/switch <序号>` 或 `/switch <会话ID>`（先用 /list 看列表）';
         const chats = await this.state.allChats();
+
+        // ① 按序号 / 已绑定会话的前缀匹配
         const n = Number(ref);
-        const hit = Number.isInteger(n) ? chats[n - 1] : chats.find((c) => c.sessionId.startsWith(ref));
-        if (!hit) return `没找到「${ref}」，用 /list 看可选会话。`;
-        await this.state.putChat({ ...hit, chatId, openId: msg.openId });
-        await this.state.indexChat(chatId);
-        return `✅ 已切换绑定到 \`${hit.sessionId.slice(0, 12)}\`（${hit.title}）。`;
+        const hit = Number.isInteger(n)
+          ? chats[n - 1]
+          : chats.find((c) => c.sessionId.startsWith(ref));
+
+        if (hit) {
+          await this.state.putChat({ ...hit, chatId, openId: msg.openId });
+          await this.state.indexChat(chatId);
+          return `✅ 已切换绑定到 \`${hit.sessionId.slice(0, 12)}\`（${hit.title}）。`;
+        }
+
+        // ② 直接给了一个 opencode 会话 ID（ses_…）——接管一个非插件创建的会话。
+        //    典型场景：在 TUI 里聊了一半，想切到飞书继续。
+        if (/^ses[_a-z0-9]*$/i.test(ref)) {
+          try {
+            const found = await this.api.getSession({ sessionID: ref });
+            if (!found?.id) return `会话 \`${ref}\` 不存在（或不在当前项目目录下）。`;
+            const binding: ChatBinding = {
+              chatId,
+              sessionId: found.id,
+              openId: msg.openId,
+              title: found.title || `会话 ${found.id.slice(0, 12)}`,
+              updatedAt: new Date().toISOString(),
+            };
+            await this.state.putChat(binding);
+            await this.state.indexChat(chatId);
+            this.lastActiveSession = found.id;
+            return `✅ 已接管会话 \`${found.id.slice(0, 12)}\`（${binding.title}）。之后飞书里的消息都会发往这个会话。`;
+          } catch (e) {
+            return `接管失败：${String((e as Error)?.message ?? e).slice(0, 160)}\n（注意：只能接管**当前项目目录**下的会话；别的项目的会话要在那个目录里装插件。）`;
+          }
+        }
+
+        return `没找到「${ref}」，用 /list 看可选会话，或直接给一个会话 ID（ses_ 开头）。`;
       },
 
       models: async (ref) => {

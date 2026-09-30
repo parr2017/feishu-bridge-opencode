@@ -218,6 +218,7 @@ opencode 向你提问时推送（对应它内部的 `question` 工具）。**你
 | `/new [标题]` | 新建 opencode 会话并绑定到当前飞书会话 |
 | `/list` | 会话列表卡 |
 | `/switch <序号>` | 按 `/list` 里的序号切换绑定会话 |
+| `/switch <ses_…>` | **接管一个已有的 opencode 会话**（比如在 TUI 里聊到一半的）——只能接管当前项目目录下的 |
 | `/model` | 模型列表卡；`/model <序号或名称>` 直接切换 |
 | `/agent` | Agent 列表卡；`/agent <序号或名称>` 直接切换 |
 | `/inbox` | 待拍板收件箱 |
