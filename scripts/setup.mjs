@@ -24,12 +24,25 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const PLUGIN_ENTRY = join(PROJECT_ROOT, '.opencode', 'plugin', 'feishu.ts');
 const OPENCODE_DIR = join(homedir(), '.config', 'opencode');
 const CONFIG_PATH = join(OPENCODE_DIR, 'feishu-bridge-opencode.json');
 const PLUGIN_LINK = join(OPENCODE_DIR, 'plugin', 'feishu.ts');
 const SETUP_LOG = join(OPENCODE_DIR, 'setup-run.log');
 const API_BASE_DEFAULT = 'https://open.feishu.cn';
+
+/**
+ * 插件入口按运行环境自动选择：
+ *   - 源码检出（git clone）：`.opencode/plugin/feishu.ts`（相对导入指向 src/，改源码即时生效）
+ *   - npx / npm 装出来的包：包根的 `index.js`（此时没有 .opencode 目录）
+ *
+ * ⚠️ 两种环境的差别要在提示里说清：npx 的包在**临时缓存**里，缓存清掉后符号链接会失效；
+ *    要稳定的全局安装，应该 `npm install -g`（或 git clone 后 npm install）。
+ */
+const ENTRY_CANDIDATES = [join(PROJECT_ROOT, '.opencode', 'plugin', 'feishu.ts'), join(PROJECT_ROOT, 'index.js')];
+const PLUGIN_ENTRY = ENTRY_CANDIDATES.find((p) => existsSync(p)) ?? ENTRY_CANDIDATES[0];
+const IS_SOURCE_CHECKOUT = PLUGIN_ENTRY.endsWith('feishu.ts');
+// npx 把包缓存在 ~/.npm/_npx 下；缓存清掉后指向它的符号链接就断了
+const IS_EPHEMERAL_ROOT = /[\\/]_npx[\\/]|[\\/]_cacache[\\/]/.test(PROJECT_ROOT);
 
 // ---------------------------------------------------------------- 终端
 
@@ -328,15 +341,26 @@ const installedAsPackage = PROJECT_ROOT.split(/[\\/]/).includes('node_modules');
 
 stage(3, '写配置 + 装全局');
 {
+  // 保留旧配置里已有的绑定关系——重跑向导（比如回头补白名单）不该把它们清掉
+  let keep = {}; // { approvers?: string[]; notifyChatId?: string }——重跑向导时保留已有绑定
+  try {
+    const prev = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'));
+    if (Array.isArray(prev.approvers) && prev.approvers.length) keep.approvers = prev.approvers;
+    if (typeof prev.notifyChatId === 'string' && prev.notifyChatId) keep.notifyChatId = prev.notifyChatId;
+  } catch {
+    /* 没有旧配置 */
+  }
+
   // 检测 open_id/chat_id 需要插件把日志写到文件，配置里先临时指向它
   const config = {
     appId,
     appSecret,
-    approvers: [],
+    approvers: keep.approvers ?? [],
     apiBase,
     wsEnabled: true,
     logLevel: 'debug',
     logFile: SETUP_LOG,
+    ...(keep.notifyChatId ? { notifyChatId: keep.notifyChatId } : {}),
   };
   mkdirSync(dirname(CONFIG_PATH), { recursive: true });
   try {
@@ -353,9 +377,8 @@ stage(3, '写配置 + 装全局');
   say(`${C.green('  ✓')} 配置已写入：${C.bold(CONFIG_PATH)}`);
   say(C.dim('    含 App Secret，别提交到 git。调试日志先开着，结束时会关掉。'));
 
-  if (installedAsPackage) {
-    say(C.dim('  · 以插件包形式安装的——opencode 已知道插件在哪，跳过符号链接。'));
-  } else if (existsSync(PLUGIN_ENTRY)) {
+  if (IS_SOURCE_CHECKOUT) {
+    // 源码检出：入口指向 src/，可以稳定地符号链接
     let want = NON_INTERACTIVE || !process.stdin.isTTY ? Boolean(flag('symlink') ?? true) : null;
     if (want === null) want = /^y?$/i.test(await ask('  装全局符号链接？任何目录启动 opencode 都能用 (Y/n)', { def: 'y' }));
     if (want) {
@@ -380,6 +403,15 @@ stage(3, '写配置 + 装全局');
         say(C.yellow(`  ! 建符号链接失败：${e.message}`));
         say(C.dim('    Windows 需要开发者模式或管理员终端；不影响继续（插件仍可在本目录使用）。'));
       }
+    }
+  } else {
+    // 包环境（npx 缓存 / npm 全局装）：入口指向包根的 index.js。
+    // npx 的缓存在向导退出后可能被清掉，往那里建符号链接会留一条断链——所以跳过，
+    // 插件本体的安装走 opencode 自己的插件管理器。
+    say(C.dim('  · 当前从 npx / 包缓存运行：凭据已就位，插件本体请用下面命令安装进 opencode：'));
+    say(C.bold('      opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git'));
+    if (IS_EPHEMERAL_ROOT) {
+      say(C.dim('    （npx 缓存是临时的，向导退出后不代表插件还在——务必执行上面的安装命令。）'));
     }
   }
 }
