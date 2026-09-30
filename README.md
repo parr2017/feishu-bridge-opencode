@@ -288,6 +288,20 @@ opencode plugin list     # 应看到一行 local .../feishu.ts（或包名来源
 
 ### 第 3 步：填凭据
 
+**两种方式任选。**
+
+**方式 A（最省事）：再跑一次向导**
+
+```bash
+npm run setup
+```
+
+它会：校验凭据 → 写配置 → 重启服务 → 确认长连接 → **让你在群里发一句话，
+自动把你的 open_id 抓进白名单、记住这个群** → 最后给群里发一条确认消息。
+全程你只需要粘贴 App ID / App Secret，和在群里说一句话。
+
+**方式 B：手动填**
+
 启动一次 opencode，插件发现没配置会**自己把模板写到**
 `~/.config/opencode/feishu-bridge-opencode.json`，并在日志里告诉你路径。
 
