@@ -13,6 +13,7 @@ import { log } from "./log.js";
 import { loadConfig, validateConfig } from "./config.js";
 import { State } from "./state.js";
 import { handleCommand, HELP } from "./commands.js";
+import { recentSessions, shortDir } from "./sessions.js";
 import { AskBridge } from "./ask.js";
 import { StallWatch } from "./stall.js";
 import { sendCard, sendText } from "./feishu/api.js";
@@ -424,9 +425,14 @@ export class Bridge {
                 return { reply: `✅ 已新建并绑定 opencode 会话 \`${b.sessionId.slice(0, 12)}\`。直接发消息即开始。` };
             },
             listSessions: async () => {
-                const chats = await this.state.allChats();
+                // 真实会话（直接读 opencode 的库，跨项目）+ 当前绑定打标
+                const recent = await recentSessions(30);
                 const current = await bindingOf();
-                return buildSessionsCard(chats.map((c) => ({ id: c.sessionId, title: c.title })), 0, current?.sessionId);
+                const entries = recent.map((r) => ({
+                    id: r.id,
+                    title: `${r.title || '(未命名)'} · ${shortDir(r.directory)}`,
+                }));
+                return buildSessionsCard(entries, 0, current?.sessionId);
             },
             switchSession: async (ref) => {
                 if (!ref)

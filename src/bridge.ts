@@ -13,6 +13,7 @@ import { log } from './log.ts';
 import { loadConfig, validateConfig, type FeishuConfig } from './config.ts';
 import { State, type ChatBinding, type KvStore } from './state.ts';
 import { handleCommand, HELP, type CommandHost, type CommandResult } from './commands.ts';
+import { recentSessions, shortDir } from './sessions.ts';
 import { AskBridge } from './ask.ts';
 import { StallWatch } from './stall.ts';
 import { sendCard, sendText } from './feishu/api.ts';
@@ -495,13 +496,14 @@ export class Bridge {
       },
 
       listSessions: async () => {
-        const chats = await this.state.allChats();
+        // 真实会话（直接读 opencode 的库，跨项目）+ 当前绑定打标
+        const recent = await recentSessions(30);
         const current = await bindingOf();
-        return buildSessionsCard(
-          chats.map((c) => ({ id: c.sessionId, title: c.title })),
-          0,
-          current?.sessionId,
-        );
+        const entries = recent.map((r) => ({
+          id: r.id,
+          title: `${r.title || '(未命名)'} · ${shortDir(r.directory)}`,
+        }));
+        return buildSessionsCard(entries, 0, current?.sessionId);
       },
 
       switchSession: async (ref) => {
