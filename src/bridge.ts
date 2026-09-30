@@ -27,7 +27,7 @@ import { buildPanelCard } from './feishu/panelCard.ts';
 export interface OpencodeApi {
   directory: string;
   createSession(input?: Record<string, unknown>): Promise<{ id: string; title?: string }>;
-  getSession(input: { sessionID: string }): Promise<{ id: string; title?: string }>;
+  getSession(input: { sessionID: string }): Promise<{ id: string; title?: string; directory?: string }>;
   prompt(input: { sessionID: string; text: string }): Promise<unknown>;
   interrupt(input: { sessionID: string }): Promise<unknown>;
   switchModel(input: Record<string, unknown>): Promise<unknown>;
@@ -258,16 +258,15 @@ export class Bridge {
     const chatId = binding?.chatId ?? (this.cfg.pushAll ? await this.chatForSession(sessionId) : null);
     if (!chatId) return; // 既没绑定、也没开 pushAll、也没有历史落点——不打扰
 
-    // 标题：绑定的用绑定标题；没绑定的去 opencode 拿（跨项目也能拿到，实测）
-    let title = binding?.title || '';
-    if (!title) {
-      title = (await this.api.getSession({ sessionID: sessionId }).catch(() => null))?.title || '';
-    }
+    // 会话自身的元数据：/switch 可跨项目接管，目录可能不是插件所在的目录
+    const info = await this.api.getSession({ sessionID: sessionId }).catch(() => null);
+    const title = binding?.title || info?.title || '';
+    const dir = info?.directory || this.api.directory;
 
     const text = drainBuffer(sessionId);
     const body = text || (interrupted ? '（执行被中止，无文本输出）' : '（执行完成，无文本输出）');
     const card = card2(interrupted ? 'orange' : 'green', interrupted ? '⏹ opencode 已中止' : '✅ opencode 已完成', [
-      md(`**会话** ${title || sessionId.slice(0, 12)}\n**目录** ${this.api.directory}\n\n${clip(body, 2400)}`),
+      md(`**会话** ${title || sessionId.slice(0, 12)}\n**目录** ${dir}\n\n${clip(body, 2400)}`),
       form(`reply_${sessionId}_${Date.now()}`, [inputField('reply', '继续这个话题…'), submitBtn('发送', 'go')]),
       note(`opencode-feishu · 引用回复本卡亦可 · ${new Date().toLocaleString()}`),
     ]);
@@ -341,9 +340,10 @@ export class Bridge {
   private async pushPermissionCard(key: string, chatId: string, sessionId: string, raw: any): Promise<boolean> {
     const view = permViewOf(raw);
     const binding = await this.state.findBySession(sessionId);
+    const meta = await this.api.getSession({ sessionID: sessionId }).catch(() => null);
     const lines = view ? view.lines.map((l) => `**${l.label}** ${l.value}`) : ['**动作** 权限请求'];
-    lines.push(`**会话** ${binding?.title || sessionId.slice(0, 12)}`);
-    lines.push(`**目录** ${this.api.directory}`);
+    lines.push(`**会话** ${binding?.title || meta?.title || sessionId.slice(0, 12)}`);
+    lines.push(`**目录** ${meta?.directory || this.api.directory}`);
 
     const elems: import('./feishu/cards.ts').CardElement[] = [md(lines.join('\n'))];
 

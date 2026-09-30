@@ -30,7 +30,17 @@ export function adaptCtx(ctx: any): OpencodeApi {
   return {
     directory: String(ctx?.location?.directory ?? process.cwd()),
     createSession: (input) => session.create(input ?? {}),
-    getSession: (input) => session.get(input),
+    // 会话对象里带 location.directory（会话真正所属的项目目录），
+    // /switch 跨项目接管时它会和插件所在目录不一致，卡片上要显示的是它
+    getSession: async (input: { sessionID: string }) => {
+      const info: any = await session.get(input);
+      if (!info) return info;
+      return {
+        id: info.id,
+        title: info.title,
+        directory: info.location?.directory ?? info.directory,
+      };
+    },
     prompt: (input) => session.prompt(input),
     interrupt: (input) => session.interrupt(input),
     switchModel: (input) => session.switchModel(input),
