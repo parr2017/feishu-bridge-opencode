@@ -132,6 +132,24 @@ CI 会在 push / PR 时跑：类型检查、45 条自测、以及「`dist/` 是�
 
 ## 5. 已经验证到什么程度（别重复踩）
 
+**✅ git+https 一条命令安装：已实测通过**
+
+```
+opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feishu-bridge-opencode.git
+```
+
+在 opencode 2.0.16 上实测安装成功、插件从缓存正常加载并连上飞书长连接。
+
+**为此修掉了两个包配置缺陷**（逐字段二分定位，每个都实测）：
+
+1. **`exports` 字段** —— 只要存在（无论什么形式），opencode 的安装器就装不上。
+   已删除，入口解析用 `main: dist/index.js`（superpowers 同款，实测可行）。
+2. **`scripts.build`** —— opencode 的 git 依赖**准备阶段会执行 `build` 脚本**，
+   而准备环境不装 devDependencies（`tsc` 不存在）→ 必挂。已改名 `compile`
+   （不是 npm 生命周期名，准备阶段不会执行），发布前手动 `npm run compile`。
+
+
+
 **已验证**
 
 - **远端仓库内容完整**：用 SSH 克隆 `git@github.com:parr2017/feishu-bridge-opencode.git`，

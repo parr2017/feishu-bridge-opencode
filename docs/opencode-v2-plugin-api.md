@@ -368,7 +368,26 @@ IMPORT FAIL zod
 
 ---
 
-## 7. 顺带拿到的 HTTP API 全貌
+## 7. 安装器的两个坑（发布插件必读）
+
+实测（opencode 2.0.16，逐字段二分定位）：
+
+1. **`package.json` 里有 `exports` 字段 → git 插件装不上**
+   `opencode plugin add <name>@git+https://...` 报
+   `NpmInstallFailedError: git dep preparation failed`。
+   任何形式的 exports 都会触发。删掉即可，入口靠 `main`。
+
+2. **`scripts.build` 会在 git 依赖准备阶段被执行**
+   准备环境不装 devDependencies，所以 build 里引用 `tsc` 等工具必挂。
+   构建脚本别叫 `build`（本仓库叫 `compile`），`dist/` 直接提交进仓库。
+
+（另外：内嵌的 npm 处理带依赖的 git 插件时会以
+`npm-cli.js install --force --include=dev --include=peer --include=optional
+--no-package-lock-only --no-dry-run` 的方式被调用——参数兼容性是上面两个坑的来源。）
+
+---
+
+## 8. 顺带拿到的 HTTP API 全貌
 
 `opencode serve` 起来后 `GET /openapi.json` 可以拿到完整 113 条路径（`opencode HttpApi 0.0.1`）。
 鉴权是 `server password <pw>` 打印出来的口令做 Basic Auth。

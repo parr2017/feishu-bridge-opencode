@@ -243,8 +243,9 @@ opencode plugin add feishu-bridge-opencode@git+https://github.com/parr2017/feish
 
 装完**重启 opencode** 让它加载。
 
-⚠️ **如果报 `NpmInstallFailedError: git dep preparation failed`**（opencode 自带的安装器
-在部分环境下会这样），用下面这个替代方案，同样两条命令：
+> 旧版 opencode（<2.0.x 部分 build）安装**带运行时依赖**的 git 插件时可能报
+> `NpmInstallFailedError: git dep preparation failed`——那是安装器的缺陷，
+> 用下面这个手动方案替代，同样两条命令：
 
 ```bash
 git clone https://github.com/parr2017/feishu-bridge-opencode.git
