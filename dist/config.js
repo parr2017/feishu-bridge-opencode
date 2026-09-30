@@ -95,6 +95,7 @@ export function loadConfig(options = {}, cwd = process.cwd()) {
         approvers: pickList(options, file, 'FEISHU_APPROVERS', 'approvers'),
         notifyChatId: pick(options, file, 'FEISHU_NOTIFY_CHAT_ID', 'notifyChatId'),
         wsEnabled: pickBool(options, file, 'FEISHU_WS_ENABLED', 'wsEnabled', true),
+        pushAll: pickBool(options, file, 'FEISHU_PUSH_ALL', 'pushAll', true),
         webhookPort: Number.isInteger(port) && port > 0 ? port : undefined,
         encryptKey: pick(options, file, 'FEISHU_ENCRYPT_KEY', 'encryptKey'),
         verificationToken: pick(options, file, 'FEISHU_VERIFICATION_TOKEN', 'verificationToken'),

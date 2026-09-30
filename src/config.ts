@@ -28,6 +28,8 @@ export interface FeishuConfig {
   /** 结果推送落点；为空时回落到「最后一次说话的会话」 */
   notifyChatId?: string;
   wsEnabled: boolean;
+  /** 完成通知是否覆盖 opencode 里【所有】会话（不只飞书发起的）。默认 true。 */
+  pushAll: boolean;
   webhookPort?: number;
   encryptKey?: string;
   verificationToken?: string;
@@ -115,6 +117,7 @@ export function loadConfig(options: Raw = {}, cwd: string = process.cwd()): Feis
     approvers: pickList(options, file, 'FEISHU_APPROVERS', 'approvers'),
     notifyChatId: pick(options, file, 'FEISHU_NOTIFY_CHAT_ID', 'notifyChatId'),
     wsEnabled: pickBool(options, file, 'FEISHU_WS_ENABLED', 'wsEnabled', true),
+    pushAll: pickBool(options, file, 'FEISHU_PUSH_ALL', 'pushAll', true),
     webhookPort: Number.isInteger(port) && port! > 0 ? port : undefined,
     encryptKey: pick(options, file, 'FEISHU_ENCRYPT_KEY', 'encryptKey'),
     verificationToken: pick(options, file, 'FEISHU_VERIFICATION_TOKEN', 'verificationToken'),

@@ -255,16 +255,23 @@ export class Bridge {
   private async pushTurnResult(sessionId: string, interrupted: boolean): Promise<void> {
     if (!sessionId) return;
     const binding = await this.state.findBySession(sessionId);
-    if (!binding) return; // 不是飞书发起的会话，不打扰
+    const chatId = binding?.chatId ?? (this.cfg.pushAll ? await this.chatForSession(sessionId) : null);
+    if (!chatId) return; // 既没绑定、也没开 pushAll、也没有历史落点——不打扰
+
+    // 标题：绑定的用绑定标题；没绑定的去 opencode 拿（跨项目也能拿到，实测）
+    let title = binding?.title || '';
+    if (!title) {
+      title = (await this.api.getSession({ sessionID: sessionId }).catch(() => null))?.title || '';
+    }
 
     const text = drainBuffer(sessionId);
     const body = text || (interrupted ? '（执行被中止，无文本输出）' : '（执行完成，无文本输出）');
     const card = card2(interrupted ? 'orange' : 'green', interrupted ? '⏹ opencode 已中止' : '✅ opencode 已完成', [
-      md(`**会话** ${binding.title || sessionId.slice(0, 12)}\n**目录** ${this.api.directory}\n\n${clip(body, 2400)}`),
+      md(`**会话** ${title || sessionId.slice(0, 12)}\n**目录** ${this.api.directory}\n\n${clip(body, 2400)}`),
       form(`reply_${sessionId}_${Date.now()}`, [inputField('reply', '继续这个话题…'), submitBtn('发送', 'go')]),
       note(`opencode-feishu · 引用回复本卡亦可 · ${new Date().toLocaleString()}`),
     ]);
-    const messageId = await sendCard(this.cfg, binding.chatId, card);
+    const messageId = await sendCard(this.cfg, chatId, card);
     if (messageId) await this.state.putRoute(messageId, { act: 'quick_reply', session_id: sessionId });
   }
 
@@ -495,16 +502,7 @@ export class Bridge {
         return { reply: `✅ 已新建并绑定 opencode 会话 \`${b.sessionId.slice(0, 12)}\`。直接发消息即开始。` };
       },
 
-      listSessions: async () => {
-        // 真实会话（直接读 opencode 的库，跨项目）+ 当前绑定打标
-        const recent = await recentSessions(30);
-        const current = await bindingOf();
-        const entries = recent.map((r) => ({
-          id: r.id,
-          title: `${r.title || '(未命名)'} · ${shortDir(r.directory)}`,
-        }));
-        return buildSessionsCard(entries, 0, current?.sessionId);
-      },
+      listSessions: async () => ({ reply: '', card: await this.sessionsCard(0, chatId) }),
 
       switchSession: async (ref) => {
         if (!ref) return '用法：`/switch <序号>` 或 `/switch <会话ID>`（先用 /list 看列表）';
@@ -605,6 +603,17 @@ export class Bridge {
     };
   }
 
+  /** 会话列表卡：/list 与翻页按钮共用的唯一数据源（读 opencode 的库，跨项目）。 */
+  private async sessionsCard(page: number, chatId: string): Promise<Record<string, unknown>> {
+    const recent = await recentSessions(30);
+    const current = await this.state.getChat(chatId);
+    const entries = recent.map((r) => ({
+      id: r.id,
+      title: `${r.title || '(未命名)'} · ${shortDir(r.directory)}`,
+    }));
+    return buildSessionsCard(entries, page, current?.sessionId);
+  }
+
   /** 收件箱：聚合待裁决的权限与待作答的提问。 */
   private async collectInbox(): Promise<InboxItem[]> {
     const items: InboxItem[] = [];
@@ -675,13 +684,9 @@ export class Bridge {
         }
 
         case 'oc_list_page':
-          return cardResponse(
-            buildSessionsCard(
-              (await this.state.allChats()).map((c) => ({ id: c.sessionId, title: c.title })),
-              Number(params.page ?? 0) || 0,
-              (await this.state.getChat(input.chatId ?? ''))?.sessionId,
-            ),
-          );
+          // ⚠️ 必须和 /list 用同一个数据源——之前这里还在读旧的绑定列表，
+          //    翻页翻出来的是另一份数据，表现为「翻页失效」。
+          return cardResponse(await this.sessionsCard(Number(params.page ?? 0) || 0, input.chatId ?? ''));
 
         case 'oc_models_page':
           return cardResponse(buildModelsCard(await this.api.listModels().catch(() => []), Number(params.page ?? 0) || 0));
