@@ -151,13 +151,17 @@ function watchConfig(api, options) {
  */
 export async function startPlugin(ctx, optionsOverride) {
     const options = optionsOverride ?? ctx?.options ?? {};
-    configureLog(options.logLevel ?? 'info', options.logFile ?? process.env.FEISHU_LOG_FILE);
     const api = adaptCtx(ctx);
+    // 先读配置再配日志——配置文件里的 logLevel / logFile 才能生效。
+    // （之前 configureLog 在 loadConfig 之前执行，配置文件里的日志设置被静默忽略，
+    //  日志全写进服务进程的 stderr，排查时什么都看不到。实测踩过。）
+    const cfgForLog = loadConfig(options, api.directory);
+    configureLog(cfgForLog.logLevel, cfgForLog.logFile ?? process.env.FEISHU_LOG_FILE);
     if (active) {
         log.info('飞书桥已在运行，跳过本 location 的重复初始化', { already: activeDirectory, skipped: api.directory });
         return;
     }
-    const cfg = loadConfig(options, api.directory);
+    const cfg = cfgForLog;
     const problem = validateConfig(cfg);
     if (problem) {
         log.warn(`飞书插件未启用：${problem}`);
